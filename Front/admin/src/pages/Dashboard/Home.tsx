@@ -5,7 +5,7 @@ import Button from '@/components/ui/button/Button';
 import axios from 'axios';
 import { Application } from '../../types/application';
 import ApplicationProfile from "../../components/ApplicationProfile/ApplicationProfile";
-import { FaMedal, FaTrophy, FaTrash, FaChartBar, FaChartPie } from 'react-icons/fa';
+import { FaMedal, FaTrophy, FaTrash, FaChartBar, FaChartPie, FaUserFriends } from 'react-icons/fa';
 
 // Eye icon component
 const EyeIcon = () => (
@@ -76,6 +76,8 @@ const DepartmentStatistics = ({ applications }: { applications: Application[] })
       
       // Check for engineering department
       if (jobTitle.includes('develop') || 
+          jobTitle.includes('dev') ||
+          jobTitle.includes('react') ||
           jobTitle.includes('engineer') || 
           jobTitle.includes('tech') ||
           jobTitle.includes('developperrrr') ||
@@ -92,6 +94,7 @@ const DepartmentStatistics = ({ applications }: { applications: Application[] })
       // Check for sales department
       else if (jobTitle.includes('sales') || 
                jobTitle.includes('account manager') || 
+               jobTitle.includes('manager') ||
                jobTitle.includes('business')) {
         counts.sales++;
       }
@@ -922,6 +925,156 @@ const DepartmentMatchPopup = ({
   );
 };
 
+// Add a FeaturedCandidates component for displaying candidate profiles with images
+const FeaturedCandidates = ({ 
+  applications, 
+  onViewApplication,
+  showTopCandidates,
+  setShowTopCandidates
+}: { 
+  applications: Application[],
+  onViewApplication: (application: Application) => void,
+  showTopCandidates: boolean,
+  setShowTopCandidates: (show: boolean) => void
+}) => {
+  // Get the top 8 candidates with the highest scores
+  const topCandidates = [...applications]
+    .filter(app => app.analysis?.score?.total)
+    .sort((a, b) => (b.analysis?.score?.total || 0) - (a.analysis?.score?.total || 0))
+    .slice(0, 8);
+
+  // Helper function to determine job department from job title
+  const getJobDepartment = (jobTitle: string): string => {
+    const lowerJobTitle = jobTitle?.toLowerCase() || '';
+    
+    if (lowerJobTitle.includes('marketing') || 
+        lowerJobTitle.includes('brand') || 
+        lowerJobTitle.includes('social media') ||
+        lowerJobTitle.includes('jhgfdsdfg')) {
+      return 'Marketing';
+    } else if (lowerJobTitle.includes('engineer') || 
+               lowerJobTitle.includes('developer') || 
+               lowerJobTitle.includes('dev') ||
+               lowerJobTitle.includes('react') ||
+               lowerJobTitle.includes('programming') || 
+               lowerJobTitle.includes('tech') ||
+               lowerJobTitle.includes('developperrrr') ||
+               lowerJobTitle.includes('zeryui')) {
+      return 'Engineering';
+    } else if (lowerJobTitle.includes('sales') || 
+               lowerJobTitle.includes('account') || 
+               lowerJobTitle.includes('business') ||
+               lowerJobTitle.includes('manager')) {
+      return 'Sales';
+    }
+    
+    return 'Unknown Department';
+  };
+
+  if (topCandidates.length === 0 || !showTopCandidates) {
+    return null;
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm p-6 mb-6">
+      <div className="flex justify-between items-center mb-4">
+        <h3 className="text-lg font-semibold flex items-center gap-2">
+          <FaUserFriends className="text-primary" />
+          Top Candidates
+        </h3>
+        <button
+          onClick={() => setShowTopCandidates(false)}
+          className="px-3 py-1 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+        >
+          Hide Section
+        </button>
+      </div>
+      
+      <div className="overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead>
+            <tr>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Name
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Email
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Department
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Score
+              </th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {topCandidates.map((candidate, index) => (
+              <tr key={candidate._id} className="hover:bg-gray-50 cursor-pointer" onClick={() => onViewApplication(candidate)}>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    <div className="h-10 w-10 flex-shrink-0">
+                      <div className="h-10 w-10 rounded-full overflow-hidden bg-gray-100">
+                        {candidate.profilePicture ? (
+                          <img 
+                            src={`http://localhost:5001/uploads/profile-pictures/${candidate.profilePicture}`}
+                            alt={candidate.name}
+                            className="h-full w-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/40';
+                            }}
+                          />
+                        ) : (
+                          <div className="h-full w-full flex items-center justify-center bg-primary text-white">
+                            {candidate.name?.charAt(0).toUpperCase() || '?'}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    <div className="ml-4">
+                      <div className="text-sm font-medium text-gray-900 flex items-center">
+                        {candidate.name} {' '}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {candidate.jobTitle || 'Unknown Position'}
+                      </div>
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {candidate.email}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                  {getJobDepartment(candidate.jobTitle)}
+                </td>
+                <td className="px-6 py-4 whitespace-nowrap">
+                  <div className="flex items-center">
+                    {candidate.analysis?.score?.total && (
+                      <FaMedal 
+                        className={
+                          candidate.analysis.score.total >= 80
+                            ? "text-green-500 mr-2"
+                            : candidate.analysis.score.total >= 60
+                            ? "text-yellow-500 mr-2"
+                            : "text-red-500 mr-2"
+                        } 
+                        size={18}
+                      />
+                    )}
+                    <span className="font-semibold">
+                      {candidate.analysis?.score?.total || 'N/A'}
+                    </span>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
+
 export default function Home() {
   const navigate = useNavigate();
   const [applications, setApplications] = useState<Application[]>([]);
@@ -937,6 +1090,7 @@ export default function Home() {
   const [rankedApplications, setRankedApplications] = useState<any[]>([]);
   const [rankingsLoading, setRankingsLoading] = useState(false);
   const [selectedDepartment, setSelectedDepartment] = useState<string | null>(null);
+  const [showTopCandidates, setShowTopCandidates] = useState(false);
 
   // Helper function to determine job department from job title
   const getJobDepartment = (jobTitle: string): string => {
@@ -949,6 +1103,8 @@ export default function Home() {
       return 'Marketing';
     } else if (lowerJobTitle.includes('engineer') || 
                lowerJobTitle.includes('developer') || 
+               lowerJobTitle.includes('dev') ||
+               lowerJobTitle.includes('react') ||
                lowerJobTitle.includes('programming') || 
                lowerJobTitle.includes('tech') ||
                lowerJobTitle.includes('developperrrr') ||
@@ -956,7 +1112,8 @@ export default function Home() {
       return 'Engineering';
     } else if (lowerJobTitle.includes('sales') || 
                lowerJobTitle.includes('account') || 
-               lowerJobTitle.includes('business')) {
+               lowerJobTitle.includes('business') ||
+               lowerJobTitle.includes('manager')) {
       return 'Sales';
     }
     
@@ -1116,6 +1273,8 @@ export default function Home() {
     
     if (title.includes('engineer') || 
         title.includes('developer') || 
+        title.includes('dev') ||
+        title.includes('react') ||
         title.includes('programming') ||
         title.includes('software') ||
         title.includes('tech') ||
@@ -1130,6 +1289,7 @@ export default function Home() {
       return 'marketing';
     } else if (title.includes('sales') || 
               title.includes('account') || 
+              title.includes('manager') ||
               title.includes('business')) {
       return 'sales';
     }
@@ -3156,7 +3316,7 @@ export default function Home() {
 
       {/* Department Statistics Component */}
       <DepartmentStatistics applications={applications} />
-
+      
       {/* Department Match Buttons */}
       <div className="flex flex-wrap gap-3 mb-6">
         <div className="text-sm font-medium text-gray-600 self-center">Find department matches:</div>
